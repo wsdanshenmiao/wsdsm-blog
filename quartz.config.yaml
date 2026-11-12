@@ -133,7 +133,7 @@ plugins:
   - source: "@quartz-community/tag-page"
     enabled: true
   - source: "@quartz-community/explorer"
-    enabled: true
+    enabled: false
     layout:
       position: left
       priority: 50
@@ -205,6 +205,9 @@ plugins:
     enabled: true
     options:
       links:
+        全部文章: /posts/
+        全部标签: /tags/
+        关于: /about
         GitHub: https://github.com/wsdanshenmiao
     layout:
       position: footer
@@ -250,7 +253,7 @@ plugins:
 layout:
   groups:
     toolbar:
-      priority: 35
+      priority: 12
       direction: row
       gap: 0.5rem
   byPageType:
