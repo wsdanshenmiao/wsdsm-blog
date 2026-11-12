@@ -3,6 +3,27 @@
 // put your custom CSS here!
 
 // ---------------------------------------------------------------------------
+// 阅读模式：真正收起左右侧栏
+// 上游的阅读模式只是把侧栏 opacity 设为 0（鼠标悬停还能看见），栅格没动，
+// 正文宽度不变。这里在桌面断点下把三列改成 0 / 1fr / 0，并隐藏侧栏元素，
+// 正文才会撑满整行。断点与 variables.scss 里的 desktop 一致（1200px）。
+// ---------------------------------------------------------------------------
+@media all and (min-width: 1200px) {
+  :root[reader-mode="on"] .page > #quartz-body {
+    grid-template-columns: 0 minmax(0, 1fr) 0;
+    column-gap: 0;
+  }
+
+  :root[reader-mode="on"] .page > #quartz-body .sidebar {
+    display: none;
+  }
+
+  :root[reader-mode="on"] .page > #quartz-body .center > article {
+    max-width: none;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 列表页标签布局
 // 上游默认把列表项排成三列 fit-content(8em) 3fr 1fr，标签落在最右那列，
 // 宽度只有一百多像素，中文标签会被折断成竖排。这里改成两列两行，
