@@ -3,60 +3,86 @@
 // put your custom CSS here!
 
 // ---------------------------------------------------------------------------
-// 阅读模式：收起两侧栏，正文撑满
+// 顶部固定导航条 + 左侧只留最近更新
 //
-// 三条坑，都踩过：
-// 1. 不能只改 grid-template-columns。#quartz-body 的子元素靠命名区域定位
-//    （grid-sidebar-left / grid-center / grid-sidebar-right），只把列宽改成 0，
-//    没有 grid-area 的 .center 会被自动放置进宽度 0 的列，正文被压成一个字一行。
-// 2. 左侧栏里放着阅读模式按钮本身，整个 display:none 会让开关消失，
-//    进去就出不来。所以左栏不隐藏，改成悬浮顶部条，只收起最近更新列表。
-// 3. 插件的 CSS 会给侧栏设 opacity: 0（鼠标悬停才显形）。元素位置和尺寸都对，
-//    但透明，表现成「改了样式却什么都没出现」。必须显式写 opacity: 1。
+// 站点名、搜索、暗色模式、阅读模式四个组件都挂在 .sidebar.left 里，
+// 所以不搬 DOM，直接把整个左栏做成一条固定顶栏，再把里面的「最近更新」
+// 单独拎出来钉在左侧做成面板。阅读模式下把这个面板藏掉即得到全宽正文。
+//
+// 踩过的坑，按顺序：
+// 1. grid-template-columns 改成 0/1fr/0 会让正文压成一列一个字。
+//    #quartz-body 的子元素靠命名区域定位，而 .center 没有 grid-area，
+//    靠自动放置落位，列宽一变就偏。必须显式写 grid-area: grid-center。
+// 2. 左栏里放着阅读模式按钮本身，整个 display:none 会把开关一起藏掉，
+//    进去就出不来。所以左栏永远保留，只收起里面的面板。
+// 3. 阅读模式插件的 CSS 给侧栏设了 opacity: 0（悬停才显形），
+//    元素位置尺寸都对但透明，必须显式盖回 opacity: 1。
 // ---------------------------------------------------------------------------
+@media all and (min-width: 1200px) {
+  .page > #quartz-body {
+    padding-top: 3.4rem;
+  }
+
+  // 钉住中间栏，避免侧栏脱离文档流后自动放置跑偏
+  .page > #quartz-body > .center {
+    grid-area: grid-center;
+  }
+
+  .page > #quartz-body > .sidebar.left {
+    display: flex;
+    opacity: 1;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3.4rem;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding: 0 1.5rem;
+    background: var(--light);
+    border-bottom: 1px solid var(--lightgray);
+    z-index: 100;
+  }
+
+  .page > #quartz-body > .sidebar.left > .page-title {
+    margin: 0;
+    padding: 0;
+    font-size: 1.05rem;
+    white-space: nowrap;
+  }
+
+  // 最近更新单独做成左侧面板
+  .page > #quartz-body > .sidebar.left > .recent-notes {
+    position: fixed;
+    top: 3.4rem;
+    left: 0;
+    width: 320px;
+    height: calc(100vh - 3.4rem);
+    overflow-y: auto;
+    padding: 1rem 1.25rem;
+    border-right: 1px solid var(--lightgray);
+    z-index: 90;
+  }
+}
+
+// 阅读模式：收起最近更新面板和右侧目录，正文居中撑满
 :root[reader-mode="on"] .page > #quartz-body {
-  display: block;
-  padding-top: 4.2rem;
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+  padding-left: 2rem;
+  padding-right: 2rem;
 }
 
-:root[reader-mode="on"] .page > #quartz-body .sidebar.right {
+:root[reader-mode="on"] .page > #quartz-body > .sidebar.right,
+:root[reader-mode="on"] .page > #quartz-body > .sidebar.left > .recent-notes {
   display: none;
 }
 
-:root[reader-mode="on"] .page > #quartz-body .sidebar.left {
-  display: flex;
-  opacity: 1;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: auto;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.7rem 1.5rem;
-  background: var(--light);
-  border-bottom: 1px solid var(--lightgray);
-  z-index: 100;
-}
-
-:root[reader-mode="on"] .sidebar.left > .recent-notes,
-:root[reader-mode="on"] .sidebar.left > .mobile-only {
-  display: none;
-}
-
-:root[reader-mode="on"] .page > #quartz-body .center {
+:root[reader-mode="on"] .page > #quartz-body > .center {
   max-width: 1200px;
-  min-width: 0;
   margin: 0 auto;
 }
 
-@media all and (min-width: 800px) {
-  :root[reader-mode="on"] .page > #quartz-body {
-    padding-left: 2rem;
-    padding-right: 2rem;
-  }
-}
 
 // ---------------------------------------------------------------------------
 // 列表页标签布局
