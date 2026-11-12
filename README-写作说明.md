@@ -150,3 +150,16 @@ npx quartz build --serve
 **这是 Quartz 5，不是 4。** 4.x 的配置写在 `quartz.config.ts` 里，5.x 改成了 `quartz.config.yaml` 加独立的 `@quartz-community/*` 插件包。网上搜到的绝大多数教程是 4.x 的，配置格式对不上。要查配置以本仓库 `docs\` 目录为准。
 
 **单文件上限 25 MiB。** Cloudflare Pages 免费版对单个文件有限制，一段几分钟的 1080p 演示视频很容易超。视频放 B 站用 iframe 内嵌，或者传到 Cloudflare R2 再用链接引，不要直接塞进仓库。仓库体积膨胀后 clone 和构建都会变慢。
+
+## 已知问题
+
+**公式和流程图依赖外部 CDN。** KaTeX 的 CSS 和 JS 从 `cdn.jsdelivr.net` 加载，Mermaid 从 `cdnjs.cloudflare.com` 加载。这两个域名在境内不一定连得上。
+
+连不上时的表现：公式位置显示成没排版的 LaTeX 源文本，流程图位置显示一段代码。正文文字、图片、代码高亮都不受影响。
+
+`configuration.theme.cdnCaching` 这个开关对它无效，实测改成 `false` 后 jsdelivr 引用一条没少；`@quartz-community/latex` 也没有自托管选项，只暴露 `renderEngine`、`katexOptions`、`mathJaxOptions`、`typstOptions`、`customMacros`。要彻底解决得改 `node_modules` 里的插件或手动注入 head，升级插件时会被覆盖，暂时不动。真遇到公式排版丢失再处理。
+
+## 当前地址
+
+https://wsdsm-blog.pages.dev
+
