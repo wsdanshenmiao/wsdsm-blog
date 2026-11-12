@@ -3,20 +3,45 @@
 // put your custom CSS here!
 
 // ---------------------------------------------------------------------------
-// 阅读模式：真正收起左右侧栏
-// 上游的阅读模式只把侧栏 opacity 设为 0（鼠标悬停还能看见），栅格没动，
-// 正文宽度不变。
+// 阅读模式：收起两侧栏，正文撑满
 //
-// 注意不能只改 grid-template-columns。 #quartz-body 的子元素靠命名区域定位
-// （grid-sidebar-left / grid-center / grid-sidebar-right），只把列宽改成 0 会让
-// 元素落进宽度 0 的列，正文被压成一条竖线。这里直接放弃栅格改块级布局，
-// 侧栏隐藏后正文自然占满，再给 .center 一个 1200px 上限保证行宽可读。
+// 三条坑，都踩过：
+// 1. 不能只改 grid-template-columns。#quartz-body 的子元素靠命名区域定位
+//    （grid-sidebar-left / grid-center / grid-sidebar-right），只把列宽改成 0，
+//    没有 grid-area 的 .center 会被自动放置进宽度 0 的列，正文被压成一个字一行。
+// 2. 左侧栏里放着阅读模式按钮本身，整个 display:none 会让开关消失，
+//    进去就出不来。所以左栏不隐藏，改成悬浮顶部条，只收起最近更新列表。
+// 3. 插件的 CSS 会给侧栏设 opacity: 0（鼠标悬停才显形）。元素位置和尺寸都对，
+//    但透明，表现成「改了样式却什么都没出现」。必须显式写 opacity: 1。
 // ---------------------------------------------------------------------------
 :root[reader-mode="on"] .page > #quartz-body {
   display: block;
+  padding-top: 4.2rem;
 }
 
-:root[reader-mode="on"] .page > #quartz-body .sidebar {
+:root[reader-mode="on"] .page > #quartz-body .sidebar.right {
+  display: none;
+}
+
+:root[reader-mode="on"] .page > #quartz-body .sidebar.left {
+  display: flex;
+  opacity: 1;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: auto;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1.5rem;
+  background: var(--light);
+  border-bottom: 1px solid var(--lightgray);
+  z-index: 100;
+}
+
+:root[reader-mode="on"] .sidebar.left > .recent-notes,
+:root[reader-mode="on"] .sidebar.left > .mobile-only {
   display: none;
 }
 
@@ -28,7 +53,8 @@
 
 @media all and (min-width: 800px) {
   :root[reader-mode="on"] .page > #quartz-body {
-    padding: 0 2rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
   }
 }
 
