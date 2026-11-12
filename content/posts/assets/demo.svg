@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="280" viewBox="0 0 640 280">
+  <rect width="640" height="280" fill="#1f2733" rx="12"/>
+  <rect x="1" y="1" width="638" height="278" fill="none" stroke="#3b4757" stroke-width="2" rx="12"/>
+  <text x="320" y="126" font-family="Segoe UI, PingFang SC, sans-serif" font-size="26" fill="#e6edf3" text-anchor="middle">图片渲染正常</text>
+  <text x="320" y="166" font-family="Segoe UI, PingFang SC, sans-serif" font-size="15" fill="#8b98a5" text-anchor="middle">这张 SVG 放在 content/posts/assets/ 下，用相对路径引用</text>
+  <line x1="120" y1="196" x2="520" y2="196" stroke="#3b4757" stroke-width="1"/>
+</svg>
