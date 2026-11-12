@@ -78,6 +78,9 @@
     height: calc(100vh - 3.4rem);
     overflow-y: auto;
     padding: 1rem 1.25rem;
+    // 面板必须不透明：它是 fixed 定位悬浮在正文上方，
+    // 透明背景会让任何宽度偏差直接表现为两层文字混叠
+    background: var(--light);
     border-right: 1px solid var(--lightgray);
     z-index: 90;
   }
