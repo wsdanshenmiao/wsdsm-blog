@@ -33,7 +33,14 @@
 }
 
 @media all and (min-width: 1200px) {
-  .page > #quartz-body {
+  // 面板和栅格首列共用同一个宽度表达式。
+  // 两个 320px 分开写死时，浏览器缩放到 125% / 150% 这类分数比例，
+  // 两处各自取整会出现偏差，固定面板就会压进正文。
+  // 用 --panel-w 保证它们永远逐像素一致；同时 24vw 让窄桌面下侧栏
+  // 自动收窄，给正文腾出空间。
+  body .page > #quartz-body {
+    --panel-w: min(320px, 24vw);
+    grid-template-columns: var(--panel-w) minmax(0, 1fr) 320px;
     padding-top: 3.4rem;
   }
 
@@ -61,13 +68,13 @@
     white-space: nowrap;
   }
 
-  // 最近更新单独做成左侧面板，宽度与栅格首列对齐
+  // 最近更新单独做成左侧面板，宽度取同一个 --panel-w
   .page > #quartz-body > .sidebar.left > .recent-notes {
     box-sizing: border-box;
     position: fixed;
     top: 3.4rem;
     left: 0;
-    width: 320px;
+    width: var(--panel-w);
     height: calc(100vh - 3.4rem);
     overflow-y: auto;
     padding: 1rem 1.25rem;
