@@ -5,7 +5,7 @@ tags: [渲染, Unity, 体积渲染]
 description: 在 Unity URP 里用 RayMarching 实现体积云的完整记录，包括形状构造、光照和三项性能优化。
 ---
 
-好久之前开的体积云，因为期末考试和过年拖了很久，这几天才算整完。记录一样实现的思路，方便日后忘记了回来复习。
+好久之前开的体积云，因为期末考试和过年拖了很久，这几天才算整完。记录一下实现的思路，方便日后忘记了回来复习。
 
 云的渲染有多种实现方法，我实现的是基于**RayMarching**的体积云体渲染，也就是将云视为孤立的元素，光线经过云这种介质之后发生作用进入人眼，由于云不会自发光，因此作用在介质上的四种行为：**吸收、外散射、内散射、发射**，就少了发射这一项，因此只需要模拟出光线经过云的剩下三种行为就可实现体积云的渲染。
 
@@ -176,13 +176,13 @@ v2f vertVolumeCloud(appdata v)
 
 ```
 
-重构操作在像素着色器内进行，首先需要从**屏幕空间**转换为范围为[0, 1]的纹理坐，即进行如下操作：
+重构操作在像素着色器内进行，首先需要从**屏幕空间**转换为范围为[0, 1]的纹理坐标，即进行如下操作：
 ```hlsl
 // _ScreenParams的xy纹理宽度和高度，z分量是1.0 + 1.0/宽度，w为1.0 + 1.0/高度。
 float2 posSS = i.vertex.xy * (_ScreenParams.zw - 1);
 ```
 
-由于复原**标准化空间**需要使用当前像素的深度，因此要需要从深度缓冲区当中采样深度，并转换为线性深度，将xy映射到[-1, 1]就可获得标准化设备空间：
+由于复原**标准化空间**需要使用当前像素的深度，因此需要从深度缓冲区当中采样深度，并转换为线性深度，将xy映射到[-1, 1]就可获得标准化设备空间：
 ```hlsl
 // 获取深度
 float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, i.uv).x;
@@ -197,7 +197,7 @@ float4 posNDC = float4(posSS * 2 - 1, depth, 1);
 #endif
 ```
 
-随后将**NDC空间**的坐标乘上观察矩阵与透视矩阵的逆矩阵即可，当然绝对不能忘了在NDC空间前面还有一个**齐次裁剪空间**，还需要复原**透视除法**这个操作，然而我们并不能直接获得透视除法中的w，因此就需要逆推：由于**世界空间下w分量为1**，随后**w分量乘上了VP矩阵**，到达齐次裁剪空间；因此为了还原世界坐标，需要在**齐次裁剪空间下将w定位1**，随后**乘上VP的逆矩阵**，最后让先前获得的坐标再除这个w分量即可。
+随后将**NDC空间**的坐标乘上观察矩阵与透视矩阵的逆矩阵即可，当然绝对不能忘了在NDC空间前面还有一个**齐次裁剪空间**，还需要复原**透视除法**这个操作，然而我们并不能直接获得透视除法中的w，因此就需要逆推：由于**世界空间下w分量为1**，随后**w分量乘上了VP矩阵**，到达齐次裁剪空间；因此为了还原世界坐标，需要在**齐次裁剪空间下将w定为1**，随后**乘上VP的逆矩阵**，最后让先前获得的坐标再除这个w分量即可。
 
 ```hlsl
 #if REQUIRE_POSITION_VS
@@ -268,7 +268,7 @@ float4 VolumeCloudRaymarching(Ray viewRay, float3 lightDir)
     // 未相交直接返回 0 光照强度
     if(insertInfo.x == 0) return float4(lightIntensity, transmittance);
 
-	// 需要考虑再云内部的情况
+	// 需要考虑在云内部的情况
     float enterPos = max(0, insertInfo.y);
     // 物体到相机的距离
     currPos += rayDir * enterPos;
@@ -292,7 +292,7 @@ float4 VolumeCloudRaymarching(Ray viewRay, float3 lightDir)
 其实这就实现了一个简单的忽略物理的体积云渲染，这里使用假设采样的密度为0.1并将密度输出，会得到如下效果：
 <img src="assets/unity-urp-volumetric-cloud/04.png" />
 
-不过目前还没有考虑遮挡问题,若是此时有物体在体积云的前面，物体按理来说会遮挡体积云，但目前被会被体积云给遮挡。
+不过目前还没有考虑遮挡问题,若是此时有物体在体积云的前面，物体按理来说会遮挡体积云，但会被体积云给遮挡。
 
 <img src="assets/unity-urp-volumetric-cloud/05.png" /><img src="assets/unity-urp-volumetric-cloud/06.png" />
 
@@ -314,11 +314,11 @@ float marchingLimit = min(linearDepth, insertInfo.z) - insertInfo.y;
 
 ## 构造体积云的形状
 
-云形状的构造我看了GPU Pro 7、一些Paper、很多知乎上的文章，都是使用同一种方法构造，即使用分形布朗运动( Fractal Brownian Motion,简称FBM)技术，该方法通过叠加不同频率和幅度的噪声来构造新的噪声。整个构造过程再`SampleDensity`函数中进行。GPU Pro 7中使用了三个纹理来构造云的形状:
+云形状的构造我看了GPU Pro 7、一些Paper、很多知乎上的文章，都是使用同一种方法构造，即使用分形布朗运动( Fractal Brownian Motion,简称FBM)技术，该方法通过叠加不同频率和幅度的噪声来构造新的噪声。整个构造过程在`SampleDensity`函数中进行。GPU Pro 7中使用了三个纹理来构造云的形状:
 
 + 第一个为3D纹理，决定了云的基础形状，该纹理使用了四个通道，R通道储存了**Perlin噪声**，作为基础噪声来构造蓬松的形状；GBA三个通道都储存了不同频率的**反向Worley噪声**。
 + 第二个也为3D纹理，为云添加细节，该纹理使用了三个通道，为**频率依次递增**的的反向Worley噪声。
-+ 第三个纹理为2D纹理，决定云的各种属性，R通道来储存**云的覆盖率**，可以自定义云的范围；G通道用来决定**云层的降雨量**，降雨量越大云层越暗，也就是吸收率越高；B通道用来决定**云层类型**，由低到高分为层云、层积云、积云，云层厚度一次增大。不过我未使用G通道和B通道。
++ 第三个纹理为2D纹理，决定云的各种属性，R通道来储存**云的覆盖率**，可以自定义云的范围；G通道用来决定**云层的降雨量**，降雨量越大云层越暗，也就是吸收率越高；B通道用来决定**云层类型**，由低到高分为层云、层积云、积云，云层厚度依次增大。不过我未使用G通道和B通道。
 
 ### 辅助函数
 
@@ -391,7 +391,7 @@ density *= roundFac * densityFac;
 
 ### 添加天气纹理
 
-本来天气纹理是要限制云的分为的，但是加上之后我觉得边缘有点生硬,因此就换了一种实现方式，通过两次插值来重新更改云的密度：
+本来天气纹理是要限制云的范围的，但是加上之后我觉得边缘有点生硬,因此就换了一种实现方式，通过两次插值来重新更改云的密度：
 
 ```hlsl
 // 为体积云添加天气属性
@@ -411,7 +411,7 @@ density *= cloudCoverage;
 
 ### 添加细节
 
-最后通过采样第二张3D纹理并构造对应的FBM，添加细节有通过重映射和腐蚀原密度两种方式，我是用的是后者来增加细节：
+最后通过采样第二张3D纹理并构造对应的FBM，添加细节有通过重映射和腐蚀原密度两种方式，我使用的是后者来增加细节：
 ```hlsl
 // 为云添加细节
 float3 sampleDetailUV = uvw * _SampleDetailScale + _SampleDetailOffset.xyz;
@@ -440,7 +440,7 @@ density -= detailErode;
 
 这里先写出需要使用到的辅助函数，都为基于物理的模拟函数：
 
-1. **Beer–Lambert’s Law**：用于计算光线再介质中的衰减，参数为光学深度。
+1. **Beer–Lambert’s Law**：用于计算光线在介质中的衰减，参数为光学深度。
 
 	```hlsl
 	// depth 为光学深度, 返回透射率
@@ -488,7 +488,7 @@ Beer–Lambert’s Law常用来描述**光线在介质中的衰减**，即光线
 
 其中光学深度与**介质的消光系数和密度**有关，具体的计算上面的辅助公式2已列出，其中密度在进行RayMarching时已经通过采集噪声图并计算FBM获得；消光系数可通过自定义一个数值来指定，空气中灰尘、水滴、污染物的含量不同消光系数自然也就不同；距离在步进的过程中同样可以获得。
 
-因此再RayMarching中需要添加如下操作：
+因此在RayMarching中需要添加如下操作：
 ```hlsl
 lightIntensity += density * stepSize * transmittance;
 // 计算吸光率
@@ -502,7 +502,7 @@ transmittance *= BeerLambert(absorbance);
 
 ![](assets/unity-urp-volumetric-cloud/15.png)
 
-思路与RayMarching一样从当前点向光源构造一条光线，并步进采集密度并计算透光率即可，由于使用的时方向光，因此不需要额外构造光线，直接使用光向量即可，具体操作如下：
+思路与RayMarching一样从当前点向光源构造一条光线，并步进采集密度并计算透光率即可，由于使用的是方向光，因此不需要额外构造光线，直接使用光向量即可，具体操作如下：
 ```hlsl
 // 从采样点出发，沿光照方向进行raymarching
 float LightMarching(float3 currPos, float3 lightDir)
@@ -630,7 +630,7 @@ for(int i = 0; i < _ShapeMarchingCount; ++i){
 
 <img src="assets/unity-urp-volumetric-cloud/16.png" /><img src="assets/unity-urp-volumetric-cloud/17.png" />
 
-对于这种分层现象可使用蓝噪声来解决，蓝噪声为均匀的随机的无偏的噪声，是一种十分难以察觉的噪声，但同时也难以消除。我们可以利用这个特性来减轻由于起点相同而造成的分层现象，在进行光线步进之前，可提前采样蓝噪声，并将其映射到[-1, 1]的分为内，分别表示前进与后退，再将其叠加再初始位置上。注意由于使用了包围盒相交算法，因此需要再计算包围盒之后才使用蓝噪声，否则会因为抵达包围盒进行的快速步进而抵消。具体操作如下：
+对于这种分层现象可使用蓝噪声来解决，蓝噪声为均匀的随机的无偏的噪声，是一种十分难以察觉的噪声，但同时也难以消除。我们可以利用这个特性来减轻由于起点相同而造成的分层现象，在进行光线步进之前，可提前采样蓝噪声，并将其映射到[-1, 1]的范围内，分别表示前进与后退，再将其叠加再初始位置上。注意由于使用了包围盒相交算法，因此需要再计算包围盒之后才使用蓝噪声，否则会因为抵达包围盒进行的快速步进而抵消。具体操作如下：
 ```hlsl
 float blueNoice = SAMPLE_TEXTURE2D(_BlueNoiceTex, sampler_BlueNoiceTex, i.uv).r;
 
@@ -656,7 +656,7 @@ currPos += startOffset * _BlueNoiceScale;
 return float4(preColor.rgb * cloud.a + cloud.rgb, preColor.a);
 ```
 
-其中`cloud.a`为光线最后的透射率transmittance，也就是云背后的光线穿透云到达相机的比例。现在为了方便分帧渲染，可以让第一个Pass只渲染提及云，将混合操作单独分配到另一个Pass，混合Pass的具体操作如下：
+其中`cloud.a`为光线最后的透射率transmittance，也就是云背后的光线穿透云到达相机的比例。现在为了方便分帧渲染，可以让第一个Pass只渲染体积云，将混合操作单独分配到另一个Pass，混合Pass的具体操作如下：
 ```hlsl
 float4 fragVolumeCloud(v2f i) : SV_Target
 {
