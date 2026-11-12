@@ -45,23 +45,29 @@ npx quartz sync
 
 ## 图片
 
-放在文章同级的 `assets\` 目录里，用相对路径引用：
+每篇文章配一个同名文件夹，图片放在里面，用相对路径引用：
 
 ```
 content\posts\
 ├── water-rendering.md
-└── assets\
-    └── wave.png
+└── water-rendering.assets\
+    ├── 01.png
+    └── 02.png
 ```
 
-文章里写 `![波形](assets/wave.png)`。构建时 `assets\` 会整份复制到输出目录，路径自动重写。
+文章里写 `![波形](water-rendering.assets/01.png)`。构建时这个文件夹会整份复制到输出目录，路径自动重写。
 
-Typora 有两个设置必须先改，否则图会裂：
+不要把所有图片堆在一个公共 `assets\` 里。文章多了之后，`01.png` 这种名字看不出属于哪篇，删文章时也不敢清理图片。
 
-- 偏好设置 → 图像 → 「插入图片时」选 **复制图片到 ./assets/**
+Typora 有三个设置要先改，否则图会裂或者乱放：
+
+- 偏好设置 → 图像 → 「插入图片时」选 **复制图片到 ./${filename}.assets/**
 - 勾选 **优先使用相对路径**
+- 不要选「使用绝对路径」，`D:\...\a.png` 这种写进 md，发布出去必然是裂图
 
-选「使用绝对路径」的话，`D:\...\a.png` 这种写进 md，发布出去必然是裂图。
+配好之后，你在 `water-rendering.md` 里粘图，Typora 自动复制到 `water-rendering.assets\`，引用自动写成相对路径，不需要手动整理。
+
+从别处搬文章进来时，如果原来的图片是外链，必须下载到本地。带防盗链的站（比如 cnblogs）在你自己的域名下引用会直接 403，图全裂。
 
 ## 为什么文件名不用中文
 
@@ -139,7 +145,7 @@ npx quartz build --serve
 | 现象 | 原因 |
 |---|---|
 | 页面能开，点进去全 404 | `baseUrl` 和实际域名不一致 |
-| 图片裂 | Typora 用了绝对路径，或图片没放在 `assets\` 下 |
+| 图片裂 | Typora 用了绝对路径，或图片没放在 `<文章名>.assets\` 目录里，或直接引用了带防盗链的外站图片 |
 | 构建失败，提示 node 版本 | Pages 环境变量 `NODE_VERSION=22` 没生效 |
 | 构建失败，提示插件 | 跑 `npx quartz plugin doctor` 看具体是哪个插件 |
 | 本地 `--serve` 报批量删除错误 | 换个终端窗口跑，或改用 `npx quartz build` 后自己起静态服务 |
