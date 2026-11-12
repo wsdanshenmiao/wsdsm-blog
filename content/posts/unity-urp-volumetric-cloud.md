@@ -24,7 +24,7 @@ public class VolumeCloudParamer : VolumeComponent, IPostProcessComponent
 ```
 
 这时后处理的配置文件便会多出一个该类添加选项添加即可。
-<img src="unity-urp-volumetric-cloud.assets/01.png" />
+<img src="assets/unity-urp-volumetric-cloud/01.png" />
 
 随后在`VolumeCloudRenderPass`中添加一个`VolumeCloudParamer`的私有成员。除此之外还需要为其添加一个自定义构造函数，以便获取需要变量。因此自定义Pass的类代码大致如下：
 ```C#
@@ -150,7 +150,7 @@ public class VolumeCloudFeature : ScriptableRendererFeature
 
 最后在URPRendererData中添加创建的Feature即可。
 
-<img src="unity-urp-volumetric-cloud.assets/02.png" />
+<img src="assets/unity-urp-volumetric-cloud/02.png" />
 
 
 
@@ -211,7 +211,7 @@ float4 posNDC = float4(posSS * 2 - 1, depth, 1);
 ```
 
 至于为啥需要用`REQUIRE_POSITION_VS`分别处理，我也不是很清楚，但若是去掉在我的windows平台上没出现问题。最后若是输出坐标可得到如下效果：
-<img src="unity-urp-volumetric-cloud.assets/03.png" />
+<img src="assets/unity-urp-volumetric-cloud/03.png" />
 
 得到世界坐标后，再减去相机的坐标即可得到观察方向。
 
@@ -290,11 +290,11 @@ float4 VolumeCloudRaymarching(Ray viewRay, float3 lightDir)
 ```
 
 其实这就实现了一个简单的忽略物理的体积云渲染，这里使用假设采样的密度为0.1并将密度输出，会得到如下效果：
-<img src="unity-urp-volumetric-cloud.assets/04.png" />
+<img src="assets/unity-urp-volumetric-cloud/04.png" />
 
 不过目前还没有考虑遮挡问题,若是此时有物体在体积云的前面，物体按理来说会遮挡体积云，但目前被会被体积云给遮挡。
 
-<img src="unity-urp-volumetric-cloud.assets/05.png" /><img src="unity-urp-volumetric-cloud.assets/06.png" />
+<img src="assets/unity-urp-volumetric-cloud/05.png" /><img src="assets/unity-urp-volumetric-cloud/06.png" />
 
 此时就需要判断当前渲染的像素的的深度是否比与包围盒的最小距离要小，若是小则物体会把云给遮住，因此需要进行如下修改：
 ```hlsl
@@ -306,7 +306,7 @@ float marchingLimit = min(linearDepth, insertInfo.z) - insertInfo.y;
 
 此时就会产生正确的遮挡关系。
 
-<img src="unity-urp-volumetric-cloud.assets/07.png" />
+<img src="assets/unity-urp-volumetric-cloud/07.png" />
 
 
 
@@ -361,10 +361,10 @@ density = Remap(shapeNoice.r, saturate(1 - shapeFBM), 1, 0, 1);
 ```
 
 此时可得到如下效果（注意我这是加入了光照的，去掉光照就是一片白）：
-<img src="unity-urp-volumetric-cloud.assets/08.png" />
+<img src="assets/unity-urp-volumetric-cloud/08.png" />
 
 此时对density进行适当的缩放和设定一个密度阈值就可以得到类似下面的效果：
-<img src="unity-urp-volumetric-cloud.assets/09.png" /><img src="unity-urp-volumetric-cloud.assets/10.png" />
+<img src="assets/unity-urp-volumetric-cloud/09.png" /><img src="assets/unity-urp-volumetric-cloud/10.png" />
 
 此时云的顶部和底部都十分的平坦，需要一定的过度，因此可以通过Remap函数和当前位置的百分比来重新排布云的分布，具体的操作如下：
 ```hlsl
@@ -407,7 +407,7 @@ density *= cloudCoverage;
 ```
 
 此时云的效果大致如下：
-<img src="unity-urp-volumetric-cloud.assets/11.png" />
+<img src="assets/unity-urp-volumetric-cloud/11.png" />
 
 ### 添加细节
 
@@ -424,9 +424,9 @@ density -= detailErode;
 ```
 
 最后得到的效果如下：
-<img src="unity-urp-volumetric-cloud.assets/12.png" />
+<img src="assets/unity-urp-volumetric-cloud/12.png" />
 
-<img src="unity-urp-volumetric-cloud.assets/13.png" />
+<img src="assets/unity-urp-volumetric-cloud/13.png" />
 
 
 
@@ -484,7 +484,7 @@ density -= detailErode;
 #### 光线吸收
 
 Beer–Lambert’s Law常用来描述**光线在介质中的衰减**，即光线有多少被介质吸收，其函数为一个指数，函数参数为介质的光学厚度，其函数图如下：
-<img src="unity-urp-volumetric-cloud.assets/14.png" />
+<img src="assets/unity-urp-volumetric-cloud/14.png" />
 
 其中光学深度与**介质的消光系数和密度**有关，具体的计算上面的辅助公式2已列出，其中密度在进行RayMarching时已经通过采集噪声图并计算FBM获得；消光系数可通过自定义一个数值来指定，空气中灰尘、水滴、污染物的含量不同消光系数自然也就不同；距离在步进的过程中同样可以获得。
 
@@ -500,7 +500,7 @@ transmittance *= BeerLambert(absorbance);
 
 先前的RayMarching为沿着视线的方向进行步进，在步进的同时采样各点的光线，也就是收集周围散射到视线上的光线，并计算其衰减，也就是下图B到P的过程，但是光线自光源传播到P点也会发生吸收，因此就需要额外构造一根光线来模拟这段吸收。
 
-![](unity-urp-volumetric-cloud.assets/15.png)
+![](assets/unity-urp-volumetric-cloud/15.png)
 
 思路与RayMarching一样从当前点向光源构造一条光线，并步进采集密度并计算透光率即可，由于使用的时方向光，因此不需要额外构造光线，直接使用光向量即可，具体操作如下：
 ```hlsl
@@ -628,7 +628,7 @@ for(int i = 0; i < _ShapeMarchingCount; ++i){
 
 尽管优化了RayMarching，步进的最大次数依然不能太大。由于无法做到连续的积分，因此才要使用隔一段距离采样一次的方式，而在这一段距离上所计算的结果都是相同的，所以在步进次数不够大的情况下就会出现明显的分层现象，造成明显的瑕疵。
 
-<img src="unity-urp-volumetric-cloud.assets/16.png" /><img src="unity-urp-volumetric-cloud.assets/17.png" />
+<img src="assets/unity-urp-volumetric-cloud/16.png" /><img src="assets/unity-urp-volumetric-cloud/17.png" />
 
 对于这种分层现象可使用蓝噪声来解决，蓝噪声为均匀的随机的无偏的噪声，是一种十分难以察觉的噪声，但同时也难以消除。我们可以利用这个特性来减轻由于起点相同而造成的分层现象，在进行光线步进之前，可提前采样蓝噪声，并将其映射到[-1, 1]的分为内，分别表示前进与后退，再将其叠加再初始位置上。注意由于使用了包围盒相交算法，因此需要再计算包围盒之后才使用蓝噪声，否则会因为抵达包围盒进行的快速步进而抵消。具体操作如下：
 ```hlsl
@@ -649,7 +649,7 @@ currPos += startOffset * _BlueNoiceScale;
 前面的方法其实都是做些小修小改，虽然优化了但是在效率上没有发生质变。而分帧渲染就是一种让效率发生质变的方法，听名字就知道该方法是将体积云的渲染在时域上进行分摊。
 
 分帧的渲染顺序并不是按普通的顺序来进行，而是以十字交叉的方式进行，这种方式在视觉上会带来更好的体验，如分16帧渲染，顺序排布就如下：
-<img src="unity-urp-volumetric-cloud.assets/18.png" />
+<img src="assets/unity-urp-volumetric-cloud/18.png" />
 
 要实现分帧渲染，Shader端与C#端都需要进行改动。首先是Shader端，先前在计算完云的颜色后直接使用系列代码进行输出：
 ```hlsl

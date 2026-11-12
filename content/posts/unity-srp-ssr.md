@@ -85,7 +85,7 @@ public class PostEffectManager
 }
 ```
 
-最后在继承了`RenderPipelineAsset`的类中添加一个成员变量`PostEffectManager`即可，此时便可在Unity中自定义添加后处理。![](unity-srp-ssr.assets/01.png)
+最后在继承了`RenderPipelineAsset`的类中添加一个成员变量`PostEffectManager`即可，此时便可在Unity中自定义添加后处理。![](assets/unity-srp-ssr/01.png)
 
 随后创建一个类继承`PostEffectSetting`来存储SSR中可调节的参数：
 
@@ -303,7 +303,7 @@ Shader "DSM RP/SSR"
 }
 ```
 
-其中`_ProjectionParams`为Unity内置的投影矩阵的信息，x值表示该平台下的矩阵是否为翻转矩阵，需要判断该值的正负来消除平台差异。在`SSRPassFragment`中将实现具体的算法，此时先输出一下uv来看看全屏三角形是否创建成功。![](unity-srp-ssr.assets/02.png)
+其中`_ProjectionParams`为Unity内置的投影矩阵的信息，x值表示该平台下的矩阵是否为翻转矩阵，需要判断该值的正负来消除平台差异。在`SSRPassFragment`中将实现具体的算法，此时先输出一下uv来看看全屏三角形是否创建成功。![](assets/unity-srp-ssr/02.png)
 
 至此实现SSR的准备也算完成了，至于在SRP中法线纹理如何获取，我是先渲染物体的时候额外设置了一个RT：
 ```C#
@@ -364,7 +364,7 @@ float3 GetViewPosition(float2 uv)
 }
 ```
 
-由于不同图形API的纹理坐标标准不同，因此还需要通过Unity内置的宏`UNITY_UV_STARTS_AT_TOP`来消除平台差异，由于视图空间下相机是原点，因此得到视图坐标后也得到了视线方向，输出一下视线方向看看正不正确。![](unity-srp-ssr.assets/03.png)
+由于不同图形API的纹理坐标标准不同，因此还需要通过Unity内置的宏`UNITY_UV_STARTS_AT_TOP`来消除平台差异，由于视图空间下相机是原点，因此得到视图坐标后也得到了视线方向，输出一下视线方向看看正不正确。![](assets/unity-srp-ssr/03.png)
 
 此时便可以从法线纹理中获取法线并将其变换到视图空间，SSR需要追踪的射线为反射光线，因此还需要通过法线和视线方向计算反射光线：
 ```hlsl
@@ -465,11 +465,11 @@ bool CheckCurrPos(float3 currPos, out float4 outCol, out float depthDis)
 }
 ```
 
-直接将返回的颜色叠加到源颜色上，此时便完成了一个最基本的SSR了。![](unity-srp-ssr.assets/04.png)
+直接将返回的颜色叠加到源颜色上，此时便完成了一个最基本的SSR了。![](assets/unity-srp-ssr/04.png)
 
 从这张图可以看出屏幕空间反射的缺陷，由于最右边球的右端在屏幕之外，因此当地板反射的光线到达理应相交的位置时无法获得信息，导致反射的缺失，这是屏幕空间算法无法避免的缺陷。解决这个问题的一种方法是在相机处朝六个方向都进行渲染，当光线步进超出一个纹理的范围时便去其他纹理查找，但这方法开销很大因此我没见过有谁实现出来。
 
-另一个很明显的问题是在离屏幕很近的的位置反射出来的球体有明显的分层现象，这里我选择的Ray Marching的步频为0.1，如此高的采样频率依然产生了明显分层，因此这个问题很难忽视。造成这个问题的原因是顶点经过投影变换后在**不同深度的分布是不均匀的**，因此同样长度的射线在近平面对应的像素量要远大于在远平面对应的像素量。![](unity-srp-ssr.assets/05.png)
+另一个很明显的问题是在离屏幕很近的的位置反射出来的球体有明显的分层现象，这里我选择的Ray Marching的步频为0.1，如此高的采样频率依然产生了明显分层，因此这个问题很难忽视。造成这个问题的原因是顶点经过投影变换后在**不同深度的分布是不均匀的**，因此同样长度的射线在近平面对应的像素量要远大于在远平面对应的像素量。![](assets/unity-srp-ssr/05.png)
 
 可参考这个图片，在屏幕平面，也就是近平面中ac与cb的长度相同，对应的像素相同，但是沿着视线方向两条直线对应的直线AC和CB并不是等长的。这就会导致当射线步进到的位置与相机的距离较近时，每次步进会略过更多的像素，造成**欠采样**影响质量；当步进到的位置与相机较远时，相邻的多次步进会采样到同一像素，造成**过采样**影响效率。而屏幕空间SSR的出现正是为了解决这些问题。
 
@@ -671,7 +671,7 @@ public static void Record(...)
 
 最后得到的结果如下：
 
-![](unity-srp-ssr.assets/06.png)
+![](assets/unity-srp-ssr/06.png)
 
 
 
@@ -894,7 +894,7 @@ void GenerateSSRHieZ (uint3 id : SV_DispatchThreadID)
 
 在生成的时候粗粒度的深度图保存到了另一个纹理中，为了简化在shader中迭代的代码，我将生成的粗粒度图拷贝到深度图的Mipmap中。得到的Hi-Z如下：
 
-<img src="unity-srp-ssr.assets/07.png" /><img src="unity-srp-ssr.assets/08.png" /><img src="unity-srp-ssr.assets/09.png" />
+<img src="assets/unity-srp-ssr/07.png" /><img src="assets/unity-srp-ssr/08.png" /><img src="assets/unity-srp-ssr/09.png" />
 
 ### RayMarching的改变
 
