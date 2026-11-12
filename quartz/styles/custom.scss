@@ -17,15 +17,24 @@
 //    进去就出不来。所以左栏永远保留，只收起里面的面板。
 // 3. 阅读模式插件的 CSS 给侧栏设了 opacity: 0（悬停才显形），
 //    元素位置尺寸都对但透明，必须显式盖回 opacity: 1。
+// 4. 面板必须写 box-sizing: border-box。默认的 content-box 会把
+//    padding 加到 320px 之外变 361px，压进正文 36px，浏览器缩放到
+//    1200~1500px 之间时尤其明显。
+// 5. 所有布局规则都要放在对应的断点里。曾经把阅读模式的列宽规则写在
+//    媒体查询外面，窗口缩到 1200 以下时顶栏规则失效、列宽规则还生效，
+//    两套栅格打架，版面直接崩。
 // ---------------------------------------------------------------------------
+
+// 中间栏在所有宽度下都钉住，侧栏一脱离文档流也不会跑偏
+@media all and (min-width: 800px) {
+  .page > #quartz-body > .center {
+    grid-area: grid-center;
+  }
+}
+
 @media all and (min-width: 1200px) {
   .page > #quartz-body {
     padding-top: 3.4rem;
-  }
-
-  // 钉住中间栏，避免侧栏脱离文档流后自动放置跑偏
-  .page > #quartz-body > .center {
-    grid-area: grid-center;
   }
 
   .page > #quartz-body > .sidebar.left {
@@ -52,8 +61,9 @@
     white-space: nowrap;
   }
 
-  // 最近更新单独做成左侧面板
+  // 最近更新单独做成左侧面板，宽度与栅格首列对齐
   .page > #quartz-body > .sidebar.left > .recent-notes {
+    box-sizing: border-box;
     position: fixed;
     top: 3.4rem;
     left: 0;
@@ -66,21 +76,33 @@
   }
 }
 
-// 阅读模式：收起最近更新面板和右侧目录，正文居中撑满
-:root[reader-mode="on"] .page > #quartz-body {
-  grid-template-columns: 0 minmax(0, 1fr) 0;
-  padding-left: 2rem;
-  padding-right: 2rem;
-}
-
+// 阅读模式：收起内容面板和右侧目录，正文居中
 :root[reader-mode="on"] .page > #quartz-body > .sidebar.right,
 :root[reader-mode="on"] .page > #quartz-body > .sidebar.left > .recent-notes {
   display: none;
 }
 
-:root[reader-mode="on"] .page > #quartz-body > .center {
-  max-width: 1200px;
-  margin: 0 auto;
+// 平板：两列变单列，左栏整列让出来
+@media all and (min-width: 800px) {
+  :root[reader-mode="on"] .page > #quartz-body {
+    grid-template-columns: 0 minmax(0, 1fr);
+  }
+}
+
+// 桌面：三列全部让出，正文占满并限宽
+@media all and (min-width: 1200px) {
+  :root[reader-mode="on"] .page > #quartz-body {
+    grid-template-columns: 0 minmax(0, 1fr) 0;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  // min-width 必须一起改：基线样式里有 min-width: 100%，它会盖过 max-width
+  :root[reader-mode="on"] .page > #quartz-body > .center {
+    min-width: 0;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
 }
 
 
