@@ -1,3 +1,53 @@
 @use "./variables.scss" as *;
 
 // put your custom CSS here!
+
+// ---------------------------------------------------------------------------
+// 列表页标签布局
+// 上游默认把列表项排成三列 fit-content(8em) 3fr 1fr，标签落在最右那列，
+// 宽度只有一百多像素，中文标签会被折断成竖排。这里改成两列两行，
+// 标签移到标题下方横排。只作用于 .page-listing，不影响弹窗和侧栏。
+// 用 grid-column / grid-row 定位而不是 grid-template-areas，
+// 因为带空单元格的区域字符串会被压缩器改写。
+// ---------------------------------------------------------------------------
+.page-listing li.section-li > .section {
+  display: grid;
+  grid-template-columns: fit-content(7em) minmax(0, 1fr);
+  column-gap: 0.6rem;
+  row-gap: 0.35rem;
+  align-items: baseline;
+}
+
+.page-listing li.section-li > .section > .meta {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+}
+
+.page-listing li.section-li > .section > .desc {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.page-listing li.section-li > .section > ul.tags {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  justify-content: flex-start;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.page-listing li.section-li > .section > ul.tags > li {
+  display: inline-block;
+  margin: 0;
+}
+
+.page-listing li.section-li > .section > ul.tags a {
+  white-space: nowrap;
+}
