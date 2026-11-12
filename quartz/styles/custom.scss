@@ -4,22 +4,31 @@
 
 // ---------------------------------------------------------------------------
 // 阅读模式：真正收起左右侧栏
-// 上游的阅读模式只是把侧栏 opacity 设为 0（鼠标悬停还能看见），栅格没动，
-// 正文宽度不变。这里在桌面断点下把三列改成 0 / 1fr / 0，并隐藏侧栏元素，
-// 正文才会撑满整行。断点与 variables.scss 里的 desktop 一致（1200px）。
+// 上游的阅读模式只把侧栏 opacity 设为 0（鼠标悬停还能看见），栅格没动，
+// 正文宽度不变。
+//
+// 注意不能只改 grid-template-columns。 #quartz-body 的子元素靠命名区域定位
+// （grid-sidebar-left / grid-center / grid-sidebar-right），只把列宽改成 0 会让
+// 元素落进宽度 0 的列，正文被压成一条竖线。这里直接放弃栅格改块级布局，
+// 侧栏隐藏后正文自然占满，再给 .center 一个 1200px 上限保证行宽可读。
 // ---------------------------------------------------------------------------
-@media all and (min-width: 1200px) {
+:root[reader-mode="on"] .page > #quartz-body {
+  display: block;
+}
+
+:root[reader-mode="on"] .page > #quartz-body .sidebar {
+  display: none;
+}
+
+:root[reader-mode="on"] .page > #quartz-body .center {
+  max-width: 1200px;
+  min-width: 0;
+  margin: 0 auto;
+}
+
+@media all and (min-width: 800px) {
   :root[reader-mode="on"] .page > #quartz-body {
-    grid-template-columns: 0 minmax(0, 1fr) 0;
-    column-gap: 0;
-  }
-
-  :root[reader-mode="on"] .page > #quartz-body .sidebar {
-    display: none;
-  }
-
-  :root[reader-mode="on"] .page > #quartz-body .center > article {
-    max-width: none;
+    padding: 0 2rem;
   }
 }
 
